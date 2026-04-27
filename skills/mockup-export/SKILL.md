@@ -43,12 +43,18 @@ Run `bash ${CLAUDE_PLUGIN_ROOT}/skills/mockup-export/scripts/scaffold.sh`.
 This script:
 - Locates the app root (cwd or `cwd/frontend/`).
 - Refuses to proceed unless `next`, `react`, and `konva` are dependencies.
-- Copies `templates/api-export-all-route.ts` to `${APP_ROOT}/src/app/api/export-all/route.ts` (only if missing).
-- Copies `scripts/export-screenshots.mjs` to `${APP_ROOT}/scripts/export-screenshots.mjs` (only if missing).
+- Copies four templates (only if missing):
+  - `templates/api-export-all-route.ts` → `${APP_ROOT}/src/app/api/export-all/route.ts`
+  - `templates/loadBriefs.ts` → `${APP_ROOT}/src/lib/loadBriefs.ts`
+  - `templates/BriefsBootstrapper.tsx` → `${APP_ROOT}/src/components/mockup/BriefsBootstrapper.tsx`
+  - `scripts/export-screenshots.mjs` → `${APP_ROOT}/scripts/export-screenshots.mjs`
 - Installs `jszip`, `playwright`, `adm-zip` if missing.
 - Records its writes in `.claude/skill-mockups.json`.
 
-If the script prints "ACTION REQUIRED: add the Export ZIP button to EditorToolbar.tsx", read `templates/toolbar-patch-instructions.md` and apply the patch using the `Edit` tool. The button MUST have `data-action="export-all-zip"` — Playwright clicks it by that selector.
+If the script prints either of the "ACTION REQUIRED" messages, apply the corresponding patch using the `Edit` tool — both are mandatory:
+
+1. **Toolbar patch** — read `templates/toolbar-patch-instructions.md` and add the `Export ZIP` button to `EditorToolbar.tsx`. Required `data-action="export-all-zip"` attribute (Playwright clicks by that selector).
+2. **Page patch** — read `templates/page-patch-instructions.md` and mount `<BriefsBootstrapper />` near the top of the editor JSX in `src/app/page.tsx`. Without this, `briefs.json` is never loaded into the store and the canvas keeps showing the default empty screenshot.
 
 ### Step 2 — Analyze the repo
 

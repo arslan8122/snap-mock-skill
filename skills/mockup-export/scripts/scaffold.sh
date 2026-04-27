@@ -149,6 +149,16 @@ main() {
     "src/app/api/export-all/route.ts"
 
   copy_if_missing \
+    "$TEMPLATES/loadBriefs.ts" \
+    "$APP_ROOT/src/lib/loadBriefs.ts" \
+    "src/lib/loadBriefs.ts"
+
+  copy_if_missing \
+    "$TEMPLATES/BriefsBootstrapper.tsx" \
+    "$APP_ROOT/src/components/mockup/BriefsBootstrapper.tsx" \
+    "src/components/mockup/BriefsBootstrapper.tsx"
+
+  copy_if_missing \
     "$PLUGIN_ROOT/skills/mockup-export/scripts/export-screenshots.mjs" \
     "$APP_ROOT/scripts/export-screenshots.mjs" \
     "scripts/export-screenshots.mjs"
@@ -157,14 +167,25 @@ main() {
   install_playwright_dep
 
   # Toolbar patch is informational — the user (or Claude) edits it manually.
+  local needs_patch=0
   if ! grep -q 'data-action="export-all-zip"' "$APP_ROOT/src/components/mockup/EditorToolbar.tsx" 2>/dev/null; then
     echo ""
     echo "[scaffold] ACTION REQUIRED: add the Export ZIP button to EditorToolbar.tsx"
     echo "[scaffold]   see $TEMPLATES/toolbar-patch-instructions.md"
-    echo ""
+    needs_patch=1
   else
     echo "[scaffold] EditorToolbar.tsx already has Export ZIP button"
   fi
+
+  if ! grep -q 'BriefsBootstrapper' "$APP_ROOT/src/app/page.tsx" 2>/dev/null; then
+    echo ""
+    echo "[scaffold] ACTION REQUIRED: mount <BriefsBootstrapper /> in src/app/page.tsx"
+    echo "[scaffold]   see $TEMPLATES/page-patch-instructions.md"
+    needs_patch=1
+  else
+    echo "[scaffold] page.tsx already mounts BriefsBootstrapper"
+  fi
+  echo ""
 
   echo "[scaffold] done. app root: $APP_ROOT"
 }

@@ -3,7 +3,6 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import AdmZip from "adm-zip";
 
-// Resolve PORT from env, then from ${CLAUDE_PLUGIN_DATA}/dev.pid (line 2), then default 3000
 async function resolvePort() {
   if (process.env.PORT) return process.env.PORT;
   const pluginData = process.env.CLAUDE_PLUGIN_DATA;
@@ -36,27 +35,24 @@ console.log(`[export] navigating to ${URL}`);
 await page.goto(URL, { waitUntil: "networkidle" });
 await page.evaluate(() => document.fonts.ready);
 
-// Atomic-write barrier: if the skill passed an expected timestamp, refuse to click
-// until /briefs.json reports the same generatedAt — prevents race with mid-write reads.
 if (EXPECTED_GENERATED_AT) {
-  const got = await page.evaluate(async () => {
-    try {
-      const r = await fetch("/briefs.json", { cache: "no-store" });
-      if (!r.ok) return null;
-      const b = await r.json();
-      return b.generatedAt || null;
-    } catch {
-      return null;
-    }
-  });
-  if (got !== EXPECTED_GENERATED_AT) {
+  try {
+    await page.waitForFunction(
+      (expected) => document.body.getAttribute("data-briefs-generated-at") === expected,
+      EXPECTED_GENERATED_AT,
+      { timeout: 30_000 }
+    );
+    console.log(`[export] briefs hydration verified (${EXPECTED_GENERATED_AT})`);
+  } catch {
+    const got = await page.evaluate(() =>
+      document.body.getAttribute("data-briefs-generated-at")
+    );
     console.error(
-      `[export] briefs.json generatedAt mismatch: expected=${EXPECTED_GENERATED_AT} got=${got}`
+      `[export] briefs hydration timeout: expected=${EXPECTED_GENERATED_AT} got=${got}`
     );
     await browser.close();
     process.exit(2);
   }
-  console.log(`[export] briefs.json generatedAt verified (${got})`);
 }
 
 const button = page.locator('[data-action="export-all-zip"]');
