@@ -149,6 +149,11 @@ main() {
     "src/app/api/export-all/route.ts"
 
   copy_if_missing \
+    "$TEMPLATES/api-render-screen-image-route.ts" \
+    "$APP_ROOT/src/app/api/render-screen-image/route.ts" \
+    "src/app/api/render-screen-image/route.ts"
+
+  copy_if_missing \
     "$TEMPLATES/loadBriefs.ts" \
     "$APP_ROOT/src/lib/loadBriefs.ts" \
     "src/lib/loadBriefs.ts"

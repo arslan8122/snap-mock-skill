@@ -44,8 +44,9 @@ Run `bash ${CLAUDE_PLUGIN_ROOT}/skills/mockup-export/scripts/scaffold.sh`.
 This script:
 - Locates the app root (cwd or `cwd/frontend/`).
 - Refuses to proceed unless `next`, `react`, and `konva` are dependencies.
-- Copies four templates (only if missing):
+- Copies five templates (only if missing):
   - `templates/api-export-all-route.ts` → `${APP_ROOT}/src/app/api/export-all/route.ts`
+  - `templates/api-render-screen-image-route.ts` → `${APP_ROOT}/src/app/api/render-screen-image/route.ts`
   - `templates/loadBriefs.ts` → `${APP_ROOT}/src/lib/loadBriefs.ts`
   - `templates/BriefsBootstrapper.tsx` → `${APP_ROOT}/src/components/mockup/BriefsBootstrapper.tsx`
   - `scripts/export-screenshots.mjs` → `${APP_ROOT}/scripts/export-screenshots.mjs`
@@ -85,9 +86,20 @@ If the captured `source_context` doesn't tell you enough about a particular scre
 
 **Output:** a single JSON object matching the `briefs.json` schema in PROMPT.md. **Output ONLY the JSON. No preamble, no code fences, no commentary.**
 
+**Required top-level fields (in addition to `version`, `generatedAt`, `theme`, `screenshots`):**
+- `appName` — copy from `analysis.appName`
+- `appIconUrl` — copy verbatim from `analysis.app_icon_url` (a `data:image/...;base64,...` URL — already embedded by analyze-local.sh)
+
+**Theme colors:**
+- Use `analysis.brand_colors[0]` as `primary_gradient_start`
+- Use `analysis.brand_colors[1]` (or a darker shade of [0]) as `primary_gradient_end`
+- Use `analysis.brand_colors[2]` (or the warmest of the palette) as `accent_color`
+- `mesh_colors` should be 3 colors picked from `brand_colors`, ordered for visual flow
+
 Validate before writing:
 - Exactly 6 entries in `screenshots`.
-- Each screenshot has at least 1 `background` layer first and at least 1 `text` layer.
+- Each screenshot has at least 1 `background` layer first, at least 1 `text` layer, and at least 1 `device` layer.
+- Every device-bearing screenshot's `screen_ui` is detailed (≥6 elements: status_bar, nav_bar, content elements, bottom_nav).
 - No headline line longer than 12 chars; no subtitle longer than 35 chars.
 - No `text` layer where `x + width > 380`.
 

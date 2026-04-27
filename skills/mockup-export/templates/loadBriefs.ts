@@ -68,18 +68,32 @@ interface AIScreenshot {
 export interface BriefsFile {
   version: number;
   generatedAt: string;
-  theme?: Record<string, unknown>;
+  theme?: {
+    headline_font?: string;
+    body_font?: string;
+    headline_weight?: string;
+    mood?: string;
+    accent_color?: string;
+    primary_gradient_start?: string;
+    primary_gradient_end?: string;
+    mesh_colors?: string[];
+  };
   screenshots: AIScreenshot[];
   appIconUrl?: string;
+  appName?: string;
 }
+
+export type DeviceScreenshotMap = Record<string, string>; // ai-screenshot-name -> data_url
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 export function aiScreenshotsToStore(
   ai: AIScreenshot[],
-  appIconUrl?: string
+  appIconUrl?: string,
+  deviceScreenshots?: DeviceScreenshotMap
 ): Screenshot[] {
   return ai.map((aiSs, i) => {
+    const deviceUrl = deviceScreenshots?.[aiSs.name];
     const layers: Layer[] = [];
     for (const aiLayer of aiSs.layers) {
       switch (aiLayer.type) {
@@ -113,6 +127,7 @@ export function aiScreenshotsToStore(
             locked: false,
             opacity: 1,
             deviceId: aiLayer.device_id || "pixel-9-pro",
+            screenshotUrl: deviceUrl || undefined,
             x: aiLayer.x,
             y: aiLayer.y,
             scale: aiLayer.scale,
