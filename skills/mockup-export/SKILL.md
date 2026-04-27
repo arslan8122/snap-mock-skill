@@ -157,3 +157,9 @@ Print the absolute path to `./mockups/` and a list of the 6 PNG sizes. Don't tea
 - Watch mode
 - App Store 1290×2796 sizing (Play Store 1080×1920 only)
 - npm/pnpm/bun lockfile detection — assumes npm
+
+## Future: Claude Design integration
+
+Anthropic shipped Claude Design (https://claude.ai/design) on 2026-04-17. It generates polished HTML/CSS designs from briefs but has no public API and exports to PDF/PPTX/HTML, not PNG. So it can't replace the Konva pipeline directly.
+
+**One-time use case (recommended for high-value clients):** spend ~20 prompts on Claude Design to generate a reference layout for one slot of the app, export the HTML, then mine it for exact gradient stops, type ramp, nav icon SVGs, and shadow values. Bake those constants into the templates as design-system overrides via a future `--design-system <claude-design-export.html>` flag (not yet implemented).

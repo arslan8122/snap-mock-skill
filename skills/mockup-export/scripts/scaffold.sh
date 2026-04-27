@@ -154,6 +154,11 @@ main() {
     "src/app/api/render-screen-image/route.ts"
 
   copy_if_missing \
+    "$TEMPLATES/api-render-screen-route.ts" \
+    "$APP_ROOT/src/app/api/render-screen/route.ts" \
+    "src/app/api/render-screen/route.ts"
+
+  copy_if_missing \
     "$TEMPLATES/loadBriefs.ts" \
     "$APP_ROOT/src/lib/loadBriefs.ts" \
     "src/lib/loadBriefs.ts"
@@ -162,6 +167,28 @@ main() {
     "$TEMPLATES/BriefsBootstrapper.tsx" \
     "$APP_ROOT/src/components/mockup/BriefsBootstrapper.tsx" \
     "src/components/mockup/BriefsBootstrapper.tsx"
+
+  # Pro-grade visual upgrades (panoramic mesh, aurora, vignette, rounded screen,
+  # deep shadows, SVG nav icons). These OVERWRITE existing files because they
+  # are central to the plugin's output quality — the visual diff is significant.
+  # Backup originals to .claude/skill-mockups-backup/ before overwriting.
+  upgrade_overwrite() {
+    local src="$1" dest="$2" relpath="$3"
+    if [ -e "$dest" ]; then
+      local backup_dir="$USER_CWD/.claude/skill-mockups-backup"
+      mkdir -p "$(dirname "$backup_dir/$relpath")"
+      if [ ! -e "$backup_dir/$relpath" ]; then
+        cp "$dest" "$backup_dir/$relpath"
+        echo "[scaffold]   backed up: $relpath -> .claude/skill-mockups-backup/"
+      fi
+    fi
+    mkdir -p "$(dirname "$dest")"
+    cp "$src" "$dest"
+    manifest_record "$relpath"
+    echo "[scaffold]   wrote (upgrade): $relpath"
+  }
+  upgrade_overwrite "$TEMPLATES/meshGradient.ts" "$APP_ROOT/src/lib/meshGradient.ts" "src/lib/meshGradient.ts"
+  upgrade_overwrite "$TEMPLATES/renderScreenshot.ts" "$APP_ROOT/src/lib/renderScreenshot.ts" "src/lib/renderScreenshot.ts"
 
   copy_if_missing \
     "$PLUGIN_ROOT/skills/mockup-export/scripts/export-screenshots.mjs" \

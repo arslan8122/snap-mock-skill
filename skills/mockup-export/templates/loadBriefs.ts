@@ -21,6 +21,8 @@ interface AIBackgroundLayer {
   mesh_seed?: number;
   image_query?: string | null;
   overlay_opacity?: number;
+  panoramic_slot?: number;
+  panoramic_total?: number;
 }
 interface AIDeviceLayer {
   type: "device";
@@ -114,6 +116,8 @@ export function aiScreenshotsToStore(
             backgroundType: bgType as "solid" | "linear" | "mesh",
             meshColors: aiLayer.mesh_colors || undefined,
             meshSeed: aiLayer.mesh_seed ?? 42,
+            panoramicSlot: aiLayer.panoramic_slot,
+            panoramicTotal: aiLayer.panoramic_total,
           };
           layers.push(bg);
           break;

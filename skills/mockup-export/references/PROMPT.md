@@ -2,7 +2,31 @@
 
 **Output ONLY a single JSON object matching the schema below. No preamble, no code fences, no commentary, no explanation. Just the JSON.**
 
-You will run THREE reasoning passes internally and combine them into one final JSON output. Do not show intermediate work — only the final JSON.
+You will run FOUR reasoning passes internally and combine them into one final JSON output. Do not show intermediate work — only the final JSON.
+
+---
+
+## PASS 0 — NARRATIVE ARC (do this BEFORE writing any copy)
+
+The 6 slots are not 6 independent posters. They tell a story. Per 2026 Play Store research, optimized 6-slot sets drive ~24% conversion uplift. **Pick one of these arcs and assign each of your 6 screen_names to a slot role:**
+
+**Arc A (recommended for utility/productivity apps):**
+1. **Hook** — biggest emotional headline. Why someone needs this. (e.g. "ELECTRIC GRADE", "STOP GUESSING")
+2. **Problem in detail** — the specific pain this solves, shown with a feature screen
+3. **Core feature** — the headline calculator/screen the user came for
+4. **Breadth** — show range/variety (lists, categories, advanced features)
+5. **Proof / Social** — history, saved data, projects, exports — *evidence that pros use this*
+6. **CTA / Trust** — pricing, offline-capable, install promise, App Store ratings, NEC/standard compliance
+
+**Arc B (AIDA — recommended for entertainment/lifestyle):**
+1. Attention (a striking visual hook)
+2. Interest (what's inside)
+3. Desire-1 (feature)
+4. Desire-2 (feature)
+5. Action (call to use)
+6. Confirmation (testimonials/reviews)
+
+**Mandatory rule:** the FINAL slot must contain a trust/proof element (offline badge, NEC compliance, "Works on the truck", count of users, etc.). Never use a generic feature screen as slot 6.
 
 ---
 
@@ -66,14 +90,17 @@ For each screenshot, provide:
 
 ### RULES
 1. Headlines MUST reference REAL features of THIS app. Read the features list carefully.
-2. Headlines MUST be SHORT. Count characters: "WIRE SIZE" = 9 chars. Max 10 per line.
-3. Subtitles MUST be under 30 characters. Count them.
-4. Slot 1 should use `"hero_icon"` layout. Use at least 3 different layout types across 6 slots.
-5. Use brand colors for the gradient. If no brand colors, pick professional ones matching the app category.
-6. Each `screen_ui` MUST represent a DIFFERENT real screen of the app — do NOT show the same screen twice.
-7. Use the SOURCE CODE to determine what UI elements exist. If a screen has a list of tools/calculators, show those EXACT tool names.
-8. NEVER include any of these in `screen_ui`: "Rate Us", "Rate App", "Review", ad banners, "AdMob", interstitial ads, rewarded ads, "Premium", "Upgrade", "Subscribe", "In-App Purchase", "Watch Ad", splash screens, or any monetization/promotional UI. Only show REAL app functionality screens.
-9. Do NOT invent screens that don't exist in the source code. If you can only find 4 real screens, describe those 4 — do not pad with generic filler screens.
+2. **Headline length: 2–6 words TOTAL across both lines.** Examples: "WIRE SIZE & VOLTS" (4), "EVERY TOOL\nYOU NEED" (4), "SAVE\nPROJECTS" (2). Never more than 12 chars per line.
+3. **Headlines must be OUTCOME-driven, not feature-listy.** Bad: "17 NEC Calculators". Good: "ELECTRIC GRADE" or "STOP GUESSING". The user buys outcomes (confidence, speed, code-compliance), not features.
+4. Subtitles: 8–12 words MAX, ≤35 chars total. Single line. Reinforce the outcome with a concrete proof point: "17 NEC-ready tools", "Live NEC 310.16 sizing", "Per-client notes & PDFs".
+5. **Layout variety is mandatory:** Slot 1 = `hero_icon`. Across all 6 slots, use AT LEAST 4 distinct `layout_type` values from {`hero_icon`, `single_device`, `dual_device`, `device_top_crop`, `tilted_device`}. Tilted layouts go on screens with rich visual content; `device_top_crop` works best for the "proof" slot 5.
+6. Use brand colors for the gradient. If no brand colors, pick professional ones matching the app category.
+7. Each `screen_ui` MUST represent a DIFFERENT real screen of the app — do NOT show the same screen twice.
+8. Use the SOURCE CODE to determine what UI elements exist. If a screen has a list of tools/calculators, show those EXACT tool names.
+9. NEVER include any of these in `screen_ui`: "Rate Us", "Rate App", "Review", ad banners, "AdMob", interstitial ads, rewarded ads, "Premium", "Upgrade", "Subscribe", "In-App Purchase", "Watch Ad", splash screens, or any monetization/promotional UI. Only show REAL app functionality screens.
+10. Do NOT invent screens that don't exist in the source code. If you can only find 4 real screens, describe those 4 — do not pad with generic filler screens.
+11. **Every screen_ui MUST include a `bottom_nav` element** (unless the screen is genuinely a fullscreen modal like onboarding). Tab labels must reflect the app's REAL navigation (read `App.tsx` and route configs to find them). Pick ONE active tab per screen — different across all 6 slots — and set `active_tab_index` accordingly. Tab names get auto-mapped to consistent line/filled SVG icons (Home, Tools, History, Reference, Settings, Search, Profile, Add) so do NOT specify emojis in the `icon` field for bottom_nav — leave it empty.
+12. **`screen_ui.elements` should have 7-10 entries** for visual richness — don't underfill the device screen. Always include `status_bar` and `nav_bar` first.
 
 ---
 
