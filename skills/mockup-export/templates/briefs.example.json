@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "generatedAt": "2026-04-27T00:00:00Z",
+  "theme": {
+    "headline_font": "Inter",
+    "body_font": "Inter",
+    "headline_weight": "700",
+    "mood": "professional",
+    "accent_color": "#7c3aed",
+    "primary_gradient_start": "#4f46e5",
+    "primary_gradient_end": "#7c3aed",
+    "mesh_colors": ["#4f46e5", "#7c3aed", "#ec4899"]
+  },
+  "screenshots": [
+    {
+      "name": "Hero",
+      "screen_ui": {
+        "screen_title": "Home",
+        "has_bottom_nav": true,
+        "active_tab_index": 0,
+        "elements": [
+          { "element_type": "status_bar", "text": "", "secondary_text": "", "icon": "" },
+          { "element_type": "nav_bar", "text": "Home", "secondary_text": "", "icon": "" },
+          { "element_type": "hero_banner", "text": "Welcome", "secondary_text": "Get started", "icon": "✨" }
+        ]
+      },
+      "layers": [
+        {
+          "type": "background",
+          "name": "Background",
+          "background_type": "mesh",
+          "fill": "#ffffff",
+          "gradient_start": null,
+          "gradient_end": null,
+          "gradient_angle": 0,
+          "mesh_colors": ["#4f46e5", "#7c3aed", "#ec4899"],
+          "mesh_seed": 42,
+          "image_query": null,
+          "overlay_opacity": 0.4
+        },
+        {
+          "type": "icon",
+          "name": "App Icon",
+          "x": 168,
+          "y": 30,
+          "width": 55,
+          "height": 55,
+          "corner_radius": 12
+        },
+        {
+          "type": "device",
+          "name": "Device",
+          "device_id": "pixel-9-pro",
+          "x": 72,
+          "y": 320,
+          "scale": 0.85,
+          "rotation": 0,
+          "frame_style": "clay",
+          "frame_color": "#ffffff"
+        },
+        {
+          "type": "text",
+          "name": "Headline",
+          "text": "TRACK\nPROGRESS",
+          "font_family": "Inter",
+          "font_weight": "700",
+          "font_size": 44,
+          "fill": "#ffffff",
+          "align": "center",
+          "x": 20,
+          "y": 110,
+          "width": 350,
+          "rotation": 0,
+          "opacity": 1
+        },
+        {
+          "type": "text",
+          "name": "Subtitle",
+          "text": "Built for power users",
+          "font_family": "Inter",
+          "font_weight": "400",
+          "font_size": 17,
+          "fill": "#ffffff",
+          "align": "center",
+          "x": 30,
+          "y": 200,
+          "width": 330,
+          "rotation": 0,
+          "opacity": 0.9
+        }
+      ]
+    }
+  ]
+}

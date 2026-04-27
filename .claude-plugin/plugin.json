@@ -1,0 +1,12 @@
+{
+  "name": "snap-mock-skill",
+  "version": "0.1.0",
+  "description": "Generate 6 Google Play Store mockup screenshots from a GitHub URL — runs entirely in-session, no API key required.",
+  "author": {
+    "name": "Arslan",
+    "email": "claudeservice@datics.ai"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/arslan8122/snap-mock-skill",
+  "repository": "https://github.com/arslan8122/snap-mock-skill"
+}

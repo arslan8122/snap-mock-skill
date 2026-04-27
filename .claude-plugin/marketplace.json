@@ -1,0 +1,42 @@
+{
+  "name": "snap-mock-skill",
+  "owner": {
+    "name": "Arslan",
+    "email": "claudeservice@datics.ai"
+  },
+  "metadata": {
+    "description": "Generate Google Play Store mockup screenshots from any GitHub repo — without leaving the terminal"
+  },
+  "plugins": [
+    {
+      "name": "snap-mock-skill",
+      "source": "./",
+      "description": "Point at a GitHub URL, get 6 ready-to-export Play Store mockup screenshots (1080x1920 PNG) with gradient backgrounds, device frames, and AI-written marketing copy. Powered by Claude + headless Chromium + Konva.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Arslan",
+        "email": "claudeservice@datics.ai"
+      },
+      "repository": "https://github.com/arslan8122/snap-mock-skill",
+      "license": "MIT",
+      "keywords": [
+        "screenshots",
+        "mockups",
+        "play-store",
+        "app-store",
+        "marketing",
+        "github",
+        "konva",
+        "playwright"
+      ],
+      "category": "design",
+      "tags": [
+        "screenshots",
+        "mockups",
+        "play-store",
+        "marketing"
+      ],
+      "strict": false
+    }
+  ]
+}
