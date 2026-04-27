@@ -1,6 +1,6 @@
 ---
 name: mockup-export
-description: Generate 6 Google Play Store mockup screenshots (1080x1920 PNG) from any GitHub URL. Triggers on phrases like "generate mockups from github", "play store screenshots", "create app store mockups", "snap mock", or when the user gives a github.com URL and asks for marketing screenshots. Runs entirely in-session — no API key required, no browser interaction needed. Output lands in ./mockups/.
+description: Generate 6 Google Play Store mockup screenshots (1080x1920 PNG) by analyzing a LOCAL project directory. Triggers on phrases like "snap mock <path>", "generate mockups for this project", "play store screenshots from my code", "create app store mockups". Reads the entire target codebase (every text file, with sane skip patterns), so Claude has full repo understanding before synthesizing. Runs entirely in-session — no API key required, no GitHub access needed. Output lands in ./mockups/.
 keywords:
   - mockup
   - mockups
@@ -8,28 +8,29 @@ keywords:
   - screenshots
   - play store
   - app store
-  - github url
+  - local project
+  - directory
   - marketing
   - snap mock
 ---
 
 # Mockup Export Skill
 
-Generate 6 Google Play Store mockup screenshots from any GitHub repo URL.
+Generate 6 Google Play Store mockup screenshots by analyzing a **local project directory**.
 
 ## What this skill does
 
-1. Analyzes a GitHub repo (README, source code, framework, brand colors) using `gh` CLI / curl — no API key needed.
-2. Reads `references/PROMPT.md` and synthesizes 6 mockup briefs (headlines, layouts, themes, screen UI) from the analysis bundle.
+1. Walks the target directory (every text file, skipping `node_modules`, `ios/Pods`, build outputs, binaries, lockfiles, etc.) and writes a manifest + a captured-source bundle.
+2. Reads `references/PROMPT.md` and synthesizes 6 mockup briefs (headlines, layouts, themes, screen UI) using full-repo context.
 3. Writes `public/briefs.json` in the user's existing Next.js + Konva app.
 4. Starts the Next.js dev server, drives a headless Chromium via Playwright to click the "Export ZIP" button.
 5. Unpacks the resulting zip into `./mockups/slot-01.png … slot-06.png`.
 
 ## Prerequisites
 
-- The user MUST be inside (or have `cd`'d into) their `ai-mockup-generator` checkout, OR a Next.js + React + Konva project with the same structure.
-- `node` and `npm` on PATH.
-- Either `gh auth login` done, or `$GITHUB_TOKEN` set, or the target repo is public (60 req/hr unauthenticated rate limit).
+- The user MUST be inside (or have `cd`'d into) their `ai-mockup-generator` checkout, OR a Next.js + React + Konva project with the same structure (this is the *renderer*, not the target being analyzed).
+- A **target directory** to analyze — passed as an argument to the skill (e.g. `/Users/me/projects/my-app`). Can be the user's cwd by default if no path is given.
+- `node`, `npm`, and `python3` on PATH. No `gh`, no GitHub token, no internet required.
 - First run downloads Chromium (~150 MB, cached at `~/.cache/ms-playwright`).
 
 ## Order of operations
@@ -56,26 +57,31 @@ If the script prints either of the "ACTION REQUIRED" messages, apply the corresp
 1. **Toolbar patch** — read `templates/toolbar-patch-instructions.md` and add the `Export ZIP` button to `EditorToolbar.tsx`. Required `data-action="export-all-zip"` attribute (Playwright clicks by that selector).
 2. **Page patch** — read `templates/page-patch-instructions.md` and mount `<BriefsBootstrapper />` near the top of the editor JSX in `src/app/page.tsx`. Without this, `briefs.json` is never loaded into the store and the canvas keeps showing the default empty screenshot.
 
-### Step 2 — Analyze the repo
+### Step 2 — Analyze the target directory
 
-Run `bash ${CLAUDE_PLUGIN_ROOT}/skills/mockup-export/scripts/analyze-repo.sh <github-url>`.
+Run `bash ${CLAUDE_PLUGIN_ROOT}/skills/mockup-export/scripts/analyze-local.sh <target-directory>`.
+
+If the user gave a `<github-url>` instead of a path, the URL form is no longer supported — ask them for the local path of the project they want mockups for.
 
 This script writes:
-- `./scratch/skill-output/repo_info.json` — repo metadata
-- `./scratch/skill-output/tree.json` — full file tree
-- `./scratch/skill-output/selected_files.txt` — Tier A/B/C/D ranked file paths
-- `./scratch/skill-files/<encoded-path>` — file contents (truncated to 5KB each)
-- `./scratch/skill-output/analysis.json` — final prompt-ready bundle
+- `./scratch/skill-output/manifest.json` — list of every text file in the project (with size), so Claude can request specific files later if needed
+- `./scratch/skill-files/<encoded-path>` — captured contents for the first 200 files (truncated at 8KB each)
+- `./scratch/skill-output/analysis.json` — prompt-ready bundle: `app_name`, `framework`, `description`, `topics`, `brand_colors`, `screens`, `readme_full`, `source_context`, `key_files`, `app_icon_local`
 
-Override `OUT_DIR` and `FILES_DIR` env vars if you want a different scratch location.
+Override `OUT_DIR` / `FILES_DIR` env vars to relocate scratch output (recommended: write under the user's cwd, e.g. `OUT_DIR=./mockup-test/skill-output`).
+
+Skip patterns enforced: `node_modules`, `.git`, `.next`, `dist`, `build`, `out`, `target`, `vendor`, `venv`, `__pycache__`, `ios/Pods`, `ios/build`, `android/build`, `android/.gradle`, `android/app/build`, `coverage`, `DerivedData`, `.expo`, `.xcworkspace`, `.xcodeproj`, plus binary file extensions (`.png`, `.ttf`, `.zip`, etc.) and lockfiles.
 
 ### Step 3 — Synthesize the briefs
 
 Read `${CLAUDE_PLUGIN_ROOT}/skills/mockup-export/references/PROMPT.md`. It contains a three-pass prompt (Content Brief → Layout Design → Validation). Run all three passes internally and combine into one JSON output.
 
 **Inputs to the prompt:**
-- The full `./scratch/skill-output/analysis.json` you just wrote.
+- The full `analysis.json` you just wrote.
+- `manifest.json` if you need to ask for files outside the captured 200 (use `Read` on `<target-dir>/<path>` directly — they're on disk).
 - The current ISO 8601 UTC timestamp (use `date -u +"%Y-%m-%dT%H:%M:%SZ"`) — you'll embed this as `generatedAt`.
+
+If the captured `source_context` doesn't tell you enough about a particular screen, look it up by reading the actual file at `<target_dir>/src/screens/<ScreenName>Screen.tsx` (or equivalent). The full repo is on the user's disk — `Read` it directly when needed.
 
 **Output:** a single JSON object matching the `briefs.json` schema in PROMPT.md. **Output ONLY the JSON. No preamble, no code fences, no commentary.**
 
@@ -122,30 +128,14 @@ The script:
 
 Print the absolute path to `./mockups/` and a list of the 6 PNG sizes. Don't tear down the dev server — the SessionEnd hook handles that automatically.
 
-## File-ranking heuristic (for reference, used by analyze-repo.sh)
-
-```
-Tier A — always include if present:
-  README*, package.json, pyproject.toml, requirements*.txt, Cargo.toml, go.mod,
-  tsconfig.json, next.config.*, vite.config.*, Dockerfile, docker-compose.y*ml,
-  pubspec.yaml, app.json, expo.json
-Tier B — entry points (first match wins):
-  src/index.{ts,tsx,js}, src/main.{ts,py,go}, src/App.{tsx,jsx},
-  app/page.tsx, app/layout.tsx, src/app/page.tsx,
-  main.py, __main__.py, cmd/*/main.go, lib/main.dart
-Tier C — config/CI: .github/workflows/*.yml, prisma/schema.prisma, tailwind.config.*
-Tier D — fill remaining (up to 15 total): shallowest source files,
-         priority .ts > .tsx > .py > .go > .rs > .dart > .js > .jsx > .kt > .java > .swift,
-         bonus for paths matching screen|page|view|activity|fragment
-```
-
 ## Troubleshooting
 
 - **Port 3000 occupied**: `start-dev.sh` falls through to 3137 automatically. If both are busy, kill the offender: `lsof -ti:3000 | xargs kill`.
-- **gh not authenticated**: skill falls through to `$GITHUB_TOKEN`, then to unauthenticated curl (60 req/hr). For private repos, run `gh auth login` first.
+- **Target directory not given**: ask the user for a path. The skill takes a *local directory* now, not a GitHub URL.
 - **Chromium missing**: `scaffold.sh` runs `npx playwright install chromium` automatically. Retry if it failed (network).
 - **briefs.json schema collision**: skill writes `briefs.claude.json` instead and tells the user.
 - **Toolbar button not found**: scaffold prints "ACTION REQUIRED" — apply the patch in `templates/toolbar-patch-instructions.md`.
+- **Wrong screens detected**: `analyze-local.sh` only matches files with `.dart`, `.ts`, `.tsx`, `.js`, `.jsx`, `.kt`, `.java`, `.swift` extensions and a `screen|page|view|activity|fragment` substring. Build artifacts (`.cmake`, `.json` from CodeGen, `.storyboard`) are filtered.
 
 ## What this skill does NOT do (out of scope for v0.1)
 
