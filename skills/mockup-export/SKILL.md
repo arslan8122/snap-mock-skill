@@ -80,12 +80,13 @@ Skip patterns enforced: `node_modules`, `.git`, `.next`, `dist`, `build`, `out`,
 
 **You — Claude — perform this step yourself. Do NOT call a Python helper, generator script, or any other code to produce briefs.json. Do not reuse a previously generated briefs.json from another project.** This is reasoning work that must be redone for every target so the output is dynamically derived from THIS project's source.
 
-1. `Read` `${CLAUDE_PLUGIN_ROOT}/skills/mockup-export/references/PROMPT.md` — it contains the five-pass prompt (Narrative Arc → Content Brief → Layout Design → Validation → Feature Graphic).
+1. `Read` `${CLAUDE_PLUGIN_ROOT}/skills/mockup-export/references/PROMPT.md` — it contains the six-pass prompt (Narrative Arc → **Style Profile Extraction** → Content Brief → Layout Design → Validation → Feature Graphic).
 2. `Read` `./scratch/skill-output/analysis.json` (or wherever `OUT_DIR` placed it).
 3. `Read` `./scratch/skill-output/manifest.json` to identify files you still need.
 4. For React Native targets, `Read` the navigator file directly — search the manifest for `_layout.tsx`, `Navigator`, or `App.tsx` and read it to extract the REAL tab labels and screen graph. Do not guess.
-5. `Read` 1–3 of the most-relevant screen source files when `source_context` doesn't give you enough text to write authentic `screen_ui` content.
-6. Run all five passes internally and produce ONE JSON object containing both the 6 `screenshots` AND the `featureGraphic` block.
+5. **For style extraction (PASS 0.5), `Read` 2–3 screen source files directly** — typically `src/screens/<Hero>Screen.tsx` plus any `theme.ts` / `colors.ts` / `tailwind.config.js` / `paperTheme.ts`. The `source_context` truncation in `analysis.json` is INSUFFICIENT for style extraction — `StyleSheet.create({...})` blocks often live below the 8KB cutoff. Read full files. The style profile (typography ramp, colors, gradients, spacing scale, shape, density, elevation, mood modifiers) **MUST** be extracted and ship as a top-level `style_profile` block in `briefs.json`.
+6. `Read` 1–3 additional relevant screen source files when `source_context` doesn't give you enough text to write authentic `screen_ui` content (this is in addition to the style-extraction reads in step 5; one file can serve both purposes).
+7. Run all six passes internally and produce ONE JSON object containing the `style_profile`, the 6 `screenshots`, AND the `featureGraphic` block.
 
 **Inputs:**
 - The full `analysis.json` you just wrote.
@@ -95,16 +96,17 @@ Skip patterns enforced: `node_modules`, `.git`, `.next`, `dist`, `build`, `out`,
 
 **Output:** a single JSON object matching the `briefs.json` schema in PROMPT.md. **Output ONLY the JSON. No preamble, no code fences, no commentary.**
 
-**Hardcoding ban (production-grade requirement):** every string in the output must trace back to either (a) `analysis.json` from THIS run, or (b) a file you read from the target directory in this session. If you find yourself about to write a brand color, screen name, list-item label, or headline that came from a previous conversation or example, stop and re-derive it from the current source.
+**Hardcoding ban (production-grade requirement):** every string AND every style value in the output must trace back to either (a) `analysis.json` from THIS run, or (b) a file you read from the target directory in this session. If you find yourself about to write a brand color, screen name, list-item label, headline, fontSize, padding, or corner_radius that came from a previous conversation or example, stop and re-derive it from the current source. The style ban is enforced: every `font_size` in your output must equal a `style_profile.type_ramp.<role>.size` value; every `corner_radius` must equal a `style_profile.shape.<key>` value; every `fill` color must equal `style_profile.colors.<key>` or appear in a `style_profile.gradients[].colors`. The renderer will silently snap mismatched values, so writing them wrong wastes effort.
 
 **Asset ban (visuals come from the project only):** the only imagery allowed in the output is (a) `analysis.app_icon_url`, (b) the in-device screen render produced by `/api/render-screen-image`, and (c) entries from `analysis.project_assets`. Do NOT fetch external photos, generate AI images, or ship stock art. If the project has no usable illustrations/splash/hero assets, every slot uses solid color + texture only — that is the correct outcome, not a fallback.
 
 **Headline copy rule (short by design):** headlines are 1 or 2 lines max, 2–5 words total, ≤20 characters per line, ALL CAPS. Single-line headlines are preferred. Examples: `"TRADE GRADE"`, `"STOP\nGUESSING"`, `"BUILD ANYTHING"`. Subtitles ≤35 characters, single line.
 
-**Required top-level fields (in addition to `version`, `generatedAt`, `theme`, `screenshots`):**
+**Required top-level fields (in addition to `version`, `generatedAt`, `theme`, `screenshots`, `featureGraphic`):**
 - `appName` — copy from `analysis.app_name`
 - `appIconUrl` — copy verbatim from `analysis.app_icon_url` (a `data:image/...;base64,...` URL — already embedded by analyze-local.sh)
 - `projectAssets` — copy `analysis.project_assets` verbatim ONLY if any `image_placeholder` element references one of its entries via `asset_url`. The runtime needs the array to resolve path → data_url at render time. Omit when no element uses it.
+- `style_profile` — REQUIRED. Extracted by you in PASS 0.5 from the target's source files. See PROMPT.md PASS 0.5 for the full schema (`type_ramp`, `colors`, `gradients`, `spacing`, `shape`, `density`, `elevation`, `mood_modifiers`). The renderer reads this for every fontSize, padding, color, and radius — without it, the output reverts to generic defaults and the mockup won't look like the target app. Fill ALL required keys; partial profiles are rejected by PASS 3 validation.
 
 **Theme colors:**
 - Use `analysis.brand_colors[0]` as `primary_gradient_start`
@@ -172,6 +174,8 @@ Print the absolute path to `./mockups/` and a list of the 7 files: `slot-01.png 
 - **briefs.json schema collision**: skill writes `briefs.claude.json` instead and tells the user.
 - **Toolbar button not found**: scaffold prints "ACTION REQUIRED" — apply the patch in `templates/toolbar-patch-instructions.md`.
 - **Wrong screens detected**: `analyze-local.sh` only matches files with `.dart`, `.ts`, `.tsx`, `.js`, `.jsx`, `.kt`, `.java`, `.swift` extensions and a `screen|page|view|activity|fragment` substring. Build artifacts (`.cmake`, `.json` from CodeGen, `.storyboard`) are filtered.
+- **Mockups don't look like the target app (generic defaults)**: this means PASS 0.5 (style profile extraction) was skipped or partial. Confirm `briefs.json` has a complete `style_profile` block with all 8 sub-objects (`type_ramp`, `colors`, `gradients`, `spacing`, `shape`, `density`, `elevation`, `mood_modifiers`). If missing or thin, re-synthesize after explicitly reading 2–3 screen source files PLUS any theme file. The `source_context` truncation in `analysis.json` is too short for full `StyleSheet.create` blocks — read the actual files via the manifest.
+- **Style profile present but mockups still wrong**: spot-check that `font_size` / `corner_radius` / `fill` values in `screenshots[].layers[]` actually match `style_profile` tokens. Common bug: synthesizer extracted the profile correctly but reverted to defaults when writing layers. Re-run PASS 3 validation rules 12–14.
 
 ## What this skill does NOT do (out of scope for v0.1)
 

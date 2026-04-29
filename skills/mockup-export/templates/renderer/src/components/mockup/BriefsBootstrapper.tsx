@@ -67,6 +67,11 @@ export default function BriefsBootstrapper() {
             primary_color: briefs.theme?.primary_gradient_start || briefs.theme?.accent_color || "#4f46e5",
             accent_color: briefs.theme?.accent_color || briefs.theme?.primary_gradient_end || "#7c3aed",
             is_dark: briefs.theme?.mood === "dark" || briefs.theme?.mood === "premium",
+            // Phase v0.3.0 — forward the extracted style profile so the
+            // server-side render-screen route can use target-app fontSize,
+            // padding, radius, gradients, etc. Falls back to defaults inside
+            // the route when this is undefined.
+            style_profile: briefs.style_profile,
           }),
         });
         if (renderRes.ok) {
@@ -102,11 +107,14 @@ export default function BriefsBootstrapper() {
         deviceScreenshots,
       );
 
-      // 3. Load into store
+      // 3. Load into store. Phase v0.3.0 — style_profile from briefs hydrates
+      // the styleProfile slot in the store; null falls through and the
+      // renderer falls back to DEFAULT_STYLE_PROFILE.
       loadTemplate({
         name: `Briefs ${briefs.generatedAt}`,
         screenshots,
         featureGraphic,
+        styleProfile: briefs.style_profile ?? null,
       });
       lastLoadedAt.current = briefs.generatedAt;
 

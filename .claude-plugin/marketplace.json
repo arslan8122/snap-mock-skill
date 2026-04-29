@@ -5,15 +5,15 @@
     "email": "claudeservice@datics.ai"
   },
   "metadata": {
-    "description": "Generate Google Play Store mockup screenshots and Feature Graphics from any local codebase — without leaving the terminal",
-    "version": "0.2.0"
+    "description": "Generate Google Play Store mockup screenshots and Feature Graphics from any local codebase. v0.3.0 extracts the target app's actual visual style and applies it to in-device screen renders — without leaving the terminal.",
+    "version": "0.3.0"
   },
   "plugins": [
     {
       "name": "snap-mock-skill",
       "source": "./",
-      "description": "Point at a local project directory, get 6 ready-to-export Play Store mockup screenshots (1080×1920 PNG) plus a 1024×500 Feature Graphic — gradient backgrounds, device frames, AI-written marketing copy, and in-device screen renders generated from your real source code. Powered by Claude + headless Chromium + Konva. Bundles its own Next.js renderer; no other repo required.",
-      "version": "0.2.0",
+      "description": "Point at a local project directory, get 6 ready-to-export Play Store mockup screenshots (1080×1920 PNG) plus a 1024×500 Feature Graphic. v0.3.0 reads the target app's actual styles (StyleSheet.create, theme files, LinearGradient JSX) and renders the in-device screens using THAT app's typography, colors, gradients, corner radii, and spacing — so mockups read as real screenshots of THAT specific app. Powered by Claude + headless Chromium + Konva. Bundles its own Next.js renderer.",
+      "version": "0.3.0",
       "author": {
         "name": "Arslan",
         "email": "claudeservice@datics.ai"

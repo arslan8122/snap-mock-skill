@@ -2,7 +2,7 @@
 
 **Output ONLY a single JSON object matching the schema below. No preamble, no code fences, no commentary, no explanation. Just the JSON.**
 
-You will run FOUR reasoning passes internally and combine them into one final JSON output. Do not show intermediate work — only the final JSON.
+You will run SIX reasoning passes internally (PASS 0, PASS 0.5, PASS 1, PASS 2, PASS 3, PASS 4) and combine them into one final JSON output. Do not show intermediate work — only the final JSON.
 
 This prompt is **app-agnostic**. Everything specific to a real app — copy, colors, screen names, tab labels, list items — must come from `analysis.json` (and from re-reading source files on disk when needed). Never inject content from prior examples.
 
@@ -29,6 +29,129 @@ The 6 slots are not 6 independent posters. They tell a story. Per 2026 Play Stor
 6. Confirmation (testimonials/reviews)
 
 **Mandatory rule:** the FINAL slot must contain a trust/proof element. Pick the one that matches the app's actual value proposition (offline, standards-compliant, no-ads, free, accuracy-tested, "works in the field", privacy-first, count of users, etc.). Never use a plain feature screen as slot 6.
+
+---
+
+## PASS 0.5 — STYLE PROFILE EXTRACTION (do this BEFORE PASS 1)
+
+The renderer reads from a top-level `style_profile` block in `briefs.json`. You — Claude — extract that profile by reading the target's actual source code. **Every fontSize, padding, color, and corner_radius the renderer paints comes from this profile.** If you skip this step, every mockup will render with generic defaults and won't look like the target app.
+
+### What to read
+
+1. `analysis.json` → `brand_colors` is the seed; treat it as the starting palette but verify against source.
+2. **Read 2–3 screen source files directly** (use the manifest to find them — typically `src/screens/<Name>Screen.tsx` or `app/<route>.tsx`). The most useful file is whichever screen has the biggest `StyleSheet.create({...})` block. For a multi-screen RN app, prioritize the Home / Hero / main feature screen.
+3. **Read the theme file if one exists** — search the manifest for `theme.ts`, `colors.ts`, `tokens.ts`, `tailwind.config.js`, `paperTheme.ts`, `tamagui.config.ts`. If found, theme values override anything you'd infer from screen-level `StyleSheet`.
+4. **Read the navigator file** to confirm font/style choices for nav bars and tab bars, since those values often live in `screenOptions={{ ... }}`.
+
+### What to extract
+
+For each field below, copy the value VERBATIM from source — do not normalize, round, average, or invent. If a value is computed at runtime (`useWindowDimensions`, `Theme.of(context)`, etc.), extract the resolved value when you can see it in a fixed branch (e.g. `isLargeDevice ? 48 : 36` → use `48` and note the conditional). Otherwise pick the largest seen value (apps usually default to large + scale down).
+
+**`type_ramp`** — typography hierarchy:
+```json
+"type_ramp": {
+  "display":  { "size": <px>, "weight": "<400|500|600|700|800>", "family": "<font>", "letter_spacing": <px or 0> },
+  "title":    { "size": <px>, "weight": "<...>", "family": "<...>", "letter_spacing": 0 },
+  "body":     { "size": <px>, "weight": "<...>", "family": "<...>", "letter_spacing": 0 },
+  "caption":  { "size": <px>, "weight": "<...>", "family": "<...>", "letter_spacing": 0 }
+}
+```
+- `display` = the largest `fontSize` you see (typically the home/hero title, often 36–60)
+- `title` = secondary heading (nav bar titles, card headers, typically 18–28)
+- `body` = standard text (button labels, list_item titles, typically 14–18)
+- `caption` = small/muted text (subtitles, footnotes, typically 11–14)
+- `family` defaults to `"System"` on iOS targets, `"Roboto"` on Android, unless the source specifies a custom font via `fontFamily:`
+- `letter_spacing` only fill for `display` if the source uses `letterSpacing:` — game/marketing apps often have 2–3px tracking on hero titles. Set to 0 elsewhere.
+
+**`colors`** — semantic color tokens (always 7 fields, all `"#RRGGBB"` or `"#RRGGBBAA"`):
+```json
+"colors": {
+  "primary": "<accent CTA color>",
+  "secondary": "<secondary accent or null>",
+  "accent": "<warm complement, often gold/amber>",
+  "background": "<page background>",
+  "surface": "<card / elevated surface bg>",
+  "label_primary": "<main text color>",
+  "label_secondary": "<muted text color>",
+  "separator": "<divider/border color>"
+}
+```
+For `colors.background`: if the target uses a `LinearGradient` background (as in `<LinearGradient colors={[...]}>`), set `background` to the FIRST color in the gradient and ALSO populate the `gradients[]` array (below). For dark-themed games (like ColorMergeMania), `background` is typically the deepest navy/slate in the gradient.
+
+**`gradients`** — list of in-app gradients pulled from `<LinearGradient>` JSX. Required when the target uses gradients heavily; empty array `[]` if not.
+```json
+"gradients": [
+  { "name": "page_bg",   "colors": ["#0F2027","#203A43","#2C5364"], "angle": 135 },
+  { "name": "primary_cta","colors": ["#FFD700","#FFA500"],          "angle": 90  }
+]
+```
+Name them descriptively (`page_bg`, `primary_cta`, `header`, `card_accent`). The renderer can use `colors.primary` + a gradient by name to paint buttons/banners.
+
+**`spacing`** — array of integer pixel values the app uses for `padding`/`margin`/`gap`. Look at the StyleSheet block, dedupe, sort:
+```json
+"spacing": [4, 8, 12, 16, 20, 24, 32]
+```
+At minimum 5 values. Most apps use a multiple-of-4 scale; when in doubt, pick `[4, 8, 12, 16, 24, 32]`.
+
+**`shape`** — corner radius per component family (integer px):
+```json
+"shape": {
+  "card": <px>,
+  "button": <px>,
+  "input": <px>,
+  "chip": <px>,
+  "sheet": <px>
+}
+```
+Look for `borderRadius:` in the StyleSheet. Apps often use **one** dominant radius across components (a "rounded-12 app" or a "rounded-pill app"). When the same radius repeats, use it everywhere; only diverge if the source clearly does. For game-style apps with pill buttons (radius ≥ 24) → `button` is large; `card` and `input` are typically half that or less.
+
+**`density`** — component sizing:
+```json
+"density": {
+  "list_row_height": <px>,
+  "button_height": <px>,
+  "tab_bar_height": <px>,
+  "input_height": <px>
+}
+```
+Default: `60 / 48 / 56 / 44`. Override when source specifies an explicit `height:` on these elements. Game apps with chunky buttons often have `button_height: 60–72`.
+
+**`elevation`** — shadow strength on a 0–4 scale:
+```json
+"elevation": {
+  "card": 1,
+  "button": 2,
+  "modal": 4,
+  "sheet": 3
+}
+```
+Read `shadowOpacity` / `shadowRadius` / `elevation` props. If the app uses heavy shadows (shadowOpacity ≥ 0.3, large `shadowRadius`), bump these by 1.
+
+**`mood_modifiers`** — qualitative flags the renderer uses to tune chrome:
+```json
+"mood_modifiers": {
+  "uppercase_buttons": true,
+  "letter_spaced_titles": true,
+  "text_shadows": true,
+  "bold_outlines": false,
+  "drop_caps": false
+}
+```
+- `uppercase_buttons`: true if button labels in source are ALL CAPS (`"PLAY"`, `"SAVE"`, etc.)
+- `letter_spaced_titles`: true if titles use `letterSpacing >= 1`
+- `text_shadows`: true if titles use `textShadowColor` / `textShadowOffset`
+- `bold_outlines`: true if buttons use `borderWidth >= 2` (outline-style buttons)
+- `drop_caps`: rarely true; only for specialty branding
+
+### Output
+
+The `style_profile` block is a REQUIRED top-level field of `briefs.json`, alongside `version`, `generatedAt`, `theme`, `screenshots`, `featureGraphic`. Include it even when most values come from defaults — the renderer must always have a complete profile.
+
+### Hardcoding ban (extends to style values)
+
+Once you've extracted the profile, EVERY `font_size`, `corner_radius`, `padding`, and color in your `screenshots[].layers[]` and `screen_ui.elements[]` MUST come from a `style_profile` token. If you find yourself writing `font_size: 16` for a body label, that 16 must equal `style_profile.type_ramp.body.size`. If they don't match, your extraction was wrong — re-read the source. Generic defaults are forbidden when the target's source has the answer.
+
+The renderer enforces this at runtime: it ignores layer-level `font_size` for known semantic roles and uses the profile's value instead. So mismatched values won't render the way you wrote them — they'll silently snap to the profile.
 
 ---
 
@@ -262,6 +385,9 @@ You are a QA reviewer. Re-read your Pass 2 output and CHECK / FIX every screensh
 9. **HARDCODED CONTENT LEAK**: Verify NO copy, color, screen-name, or list-item text was carried over from earlier conversations or example apps. Every string must trace back to the current `analysis.json` or to a file you Read on the user's disk.
 10. **NARRATIVE ARC INTEGRITY**: Slot 1 is `hero_icon`. Slot 6 carries trust/proof content (not a generic feature). 6 unique screens. ≥4 distinct layout types. Active tab differs across slots.
 11. **BOTTOM NAV CONSISTENCY**: Every screen with `has_bottom_nav: true` ends its `elements` array with exactly one `bottom_nav` element whose `icon` field is empty.
+12. **STYLE PROFILE COMPLETENESS**: Top-level `style_profile` block is present and has all required keys: `type_ramp` (with display/title/body/caption sub-keys, each with size/weight/family), `colors` (all 7 keys: primary/secondary/accent/background/surface/label_primary/label_secondary/separator), `gradients` (array, may be empty), `spacing` (≥5 integers), `shape` (5 keys), `density` (4 keys), `elevation` (4 keys), `mood_modifiers` (5 boolean keys). Missing required keys → re-read source files and fill them.
+13. **STYLE PROFILE FIDELITY**: Spot-check 3 random `font_size` values you used in `screenshots[].layers[]` text elements. Each must equal a value in `style_profile.type_ramp.<role>.size`. If not, fix the layer to reference the correct token. Same check for any `corner_radius` (must equal a `style_profile.shape.<key>` value) and any `fill` color (must equal `style_profile.colors.<key>` or appear in a `style_profile.gradients[].colors`).
+14. **MOOD CONSISTENCY**: If `style_profile.mood_modifiers.uppercase_buttons` is true, every `button` element's `text` field must be ALL CAPS. If `letter_spaced_titles` is true, headline copy in `screenshots[].layers[]` text elements with `name: "Headline"` should also use ALL CAPS (the renderer applies the letter-spacing automatically). If `text_shadows` is false, headlines render flat — don't compensate with overly bold weights.
 
 Output the COMPLETE corrected layout with ALL screenshots and ALL layers (including ones that didn't need changes).
 
@@ -337,6 +463,39 @@ The output you write is consumed by `frontend/src/stores/mockupStore.ts` and `fr
   "appName": "<analysis.app_name verbatim>",
   "appIconUrl": "<analysis.app_icon_url verbatim — typically data:image/...;base64,...>",
   "projectAssets": "<copy analysis.project_assets verbatim if any image_placeholder asset_url references one of its entries; otherwise omit>",
+  "style_profile": {
+    "type_ramp": {
+      "display": { "size": 48, "weight": "700", "family": "System", "letter_spacing": 2 },
+      "title":   { "size": 24, "weight": "600", "family": "System", "letter_spacing": 0 },
+      "body":    { "size": 16, "weight": "500", "family": "System", "letter_spacing": 0 },
+      "caption": { "size": 12, "weight": "400", "family": "System", "letter_spacing": 0 }
+    },
+    "colors": {
+      "primary": "#FFD700",
+      "secondary": "#FFA500",
+      "accent": "#FFD700",
+      "background": "#0F2027",
+      "surface": "#203A43",
+      "label_primary": "#FFFFFF",
+      "label_secondary": "rgba(255,255,255,0.8)",
+      "separator": "rgba(255,255,255,0.15)"
+    },
+    "gradients": [
+      { "name": "page_bg",    "colors": ["#0F2027","#203A43","#2C5364"], "angle": 135 },
+      { "name": "primary_cta","colors": ["#FFD700","#FFA500"],          "angle": 90  }
+    ],
+    "spacing": [4, 8, 12, 16, 20, 24, 32],
+    "shape": { "card": 16, "button": 35, "input": 12, "chip": 999, "sheet": 20 },
+    "density": { "list_row_height": 60, "button_height": 65, "tab_bar_height": 56, "input_height": 48 },
+    "elevation": { "card": 1, "button": 2, "modal": 4, "sheet": 3 },
+    "mood_modifiers": {
+      "uppercase_buttons": true,
+      "letter_spaced_titles": true,
+      "text_shadows": true,
+      "bold_outlines": true,
+      "drop_caps": false
+    }
+  },
   "theme": {
     "headline_font": "...",
     "body_font": "...",
@@ -392,4 +551,4 @@ The output you write is consumed by `frontend/src/stores/mockupStore.ts` and `fr
 }
 ```
 
-Produce exactly 6 entries in `screenshots` AND exactly 1 `featureGraphic` block. Each screenshot MUST have a `background` layer first and at least a headline text layer. The featureGraphic MUST have a `background`, ≥1 `text`, and ≥1 `device` layer with a valid `source_slot`. Validate every layer against the rules in Pass 3 (screenshots) and Pass 4 (featureGraphic) before outputting.
+Produce exactly 6 entries in `screenshots` AND exactly 1 `featureGraphic` block AND a complete `style_profile` block. Each screenshot MUST have a `background` layer first and at least a headline text layer. The featureGraphic MUST have a `background`, ≥1 `text`, and ≥1 `device` layer with a valid `source_slot`. The `style_profile` MUST have all required keys per PASS 0.5. Validate every layer against the rules in Pass 3 (screenshots, including style profile completeness + fidelity + mood consistency checks) and Pass 4 (featureGraphic) before outputting.

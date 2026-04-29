@@ -97,6 +97,36 @@ export interface MockupProject {
   canvasHeight: number;
 }
 
+// Phase v0.3.0 — minimal StyleProfile shape, kept here to avoid a circular
+// import between the store and loadBriefs.ts. Full schema (with all keys
+// required) lives in loadBriefs.ts as `StyleProfile`. This loose shape is what
+// the renderer reads.
+export interface StyleProfileShape {
+  type_ramp: {
+    display: { size: number; weight: string; family: string; letter_spacing?: number };
+    title:   { size: number; weight: string; family: string; letter_spacing?: number };
+    body:    { size: number; weight: string; family: string; letter_spacing?: number };
+    caption: { size: number; weight: string; family: string; letter_spacing?: number };
+  };
+  colors: {
+    primary: string; secondary: string | null; accent: string;
+    background: string; surface: string;
+    label_primary: string; label_secondary: string; separator: string;
+  };
+  gradients: Array<{ name: string; colors: string[]; angle: number }>;
+  spacing: number[];
+  shape: { card: number; button: number; input: number; chip: number; sheet: number };
+  density: { list_row_height: number; button_height: number; tab_bar_height: number; input_height: number };
+  elevation: { card: number; button: number; modal: number; sheet: number };
+  mood_modifiers: {
+    uppercase_buttons: boolean;
+    letter_spaced_titles: boolean;
+    text_shadows: boolean;
+    bold_outlines: boolean;
+    drop_caps: boolean;
+  };
+}
+
 interface MockupState {
   project: MockupProject;
   selectedLayerId: string | null;
@@ -106,6 +136,10 @@ interface MockupState {
   // Phase FG: standalone landscape banner (1024×500). Lives outside `project.screenshots`
   // so it never gets clobbered when the user adds/removes/reorders the 6 slot screenshots.
   featureGraphic: Screenshot | null;
+  // Phase v0.3.0 — extracted from target app source by Claude during synthesis.
+  // Renderer reads this for every fontSize, padding, color, corner_radius. Null
+  // until BriefsBootstrapper hydrates it; renderer falls back to defaults.
+  styleProfile: StyleProfileShape | null;
 
   setProject: (project: MockupProject) => void;
   selectLayer: (layerId: string | null) => void;
@@ -122,8 +156,9 @@ interface MockupState {
   undo: () => void;
   redo: () => void;
   pushHistory: () => void;
-  loadTemplate: (template: { name: string; screenshots: Screenshot[]; featureGraphic?: Screenshot | null }) => void;
+  loadTemplate: (template: { name: string; screenshots: Screenshot[]; featureGraphic?: Screenshot | null; styleProfile?: StyleProfileShape | null }) => void;
   setFeatureGraphic: (fg: Screenshot | null) => void;
+  setStyleProfile: (profile: StyleProfileShape | null) => void;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -168,6 +203,7 @@ export const useMockupStore = create<MockupState>()(
     historyIndex: -1,
     zoom: 0.65,
     featureGraphic: null,
+    styleProfile: null,
 
     setProject: (project) =>
       set((state) => {
@@ -177,6 +213,11 @@ export const useMockupStore = create<MockupState>()(
     setFeatureGraphic: (fg) =>
       set((state) => {
         state.featureGraphic = fg;
+      }),
+
+    setStyleProfile: (profile) =>
+      set((state) => {
+        state.styleProfile = profile;
       }),
 
     selectLayer: (layerId) =>
@@ -312,6 +353,12 @@ export const useMockupStore = create<MockupState>()(
         // which lets BriefsBootstrapper hydrate it after screenshots without a race.
         if (template.featureGraphic !== undefined) {
           state.featureGraphic = template.featureGraphic;
+        }
+        // Phase v0.3.0 — style profile follows the same opt-in pattern. Caller
+        // omits the field to preserve an existing profile (so the bootstrapper
+        // can hydrate it after screenshots without a race).
+        if (template.styleProfile !== undefined) {
+          state.styleProfile = template.styleProfile;
         }
       }),
   }))

@@ -20,6 +20,9 @@ interface ScreenRenderRequest {
   primary_color: string;
   accent_color: string;
   is_dark: boolean;
+  // Phase v0.3.0 — extracted by Claude in PASS 0.5; forwarded to /api/render-screen
+  // so element renderers can read profile tokens. Optional for backwards compat.
+  style_profile?: unknown;
 }
 
 interface ScreenRenderResult {
@@ -70,6 +73,9 @@ export async function POST(req: NextRequest) {
           primary_color: body.primary_color,
           accent_color: body.accent_color,
           is_dark: body.is_dark,
+          // Phase v0.3.0 — pass through to render-screen so its element
+          // renderers can consume target-extracted style tokens.
+          style_profile: body.style_profile,
         }),
       });
       if (!r.ok) {

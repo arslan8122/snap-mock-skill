@@ -78,6 +78,67 @@ export interface AIFeatureGraphic {
   layers: AILayer[];
 }
 
+// Phase v0.3.0 — style profile extracted by Claude from the target app's source
+// during PASS 0.5 of synthesis. Drives every fontSize, padding, color, and
+// corner_radius the renderer paints, so mockups visually match the target app.
+export interface StyleRamp {
+  size: number;
+  weight: string;
+  family: string;
+  letter_spacing?: number;
+}
+export interface StyleGradient {
+  name: string;
+  colors: string[];
+  angle: number;
+}
+export interface StyleProfile {
+  type_ramp: {
+    display: StyleRamp;
+    title: StyleRamp;
+    body: StyleRamp;
+    caption: StyleRamp;
+  };
+  colors: {
+    primary: string;
+    secondary: string | null;
+    accent: string;
+    background: string;
+    surface: string;
+    label_primary: string;
+    label_secondary: string;
+    separator: string;
+  };
+  gradients: StyleGradient[];
+  spacing: number[];
+  shape: {
+    card: number;
+    button: number;
+    input: number;
+    chip: number;
+    sheet: number;
+  };
+  density: {
+    list_row_height: number;
+    button_height: number;
+    tab_bar_height: number;
+    input_height: number;
+  };
+  elevation: {
+    card: number;
+    button: number;
+    modal: number;
+    sheet: number;
+  };
+  mood_modifiers: {
+    uppercase_buttons: boolean;
+    letter_spaced_titles: boolean;
+    text_shadows: boolean;
+    bold_outlines: boolean;
+    drop_caps: boolean;
+  };
+}
+
 export interface BriefsFile {
   version: number;
   generatedAt: string;
@@ -91,6 +152,11 @@ export interface BriefsFile {
     primary_gradient_end?: string;
     mesh_colors?: string[];
   };
+  // Phase v0.3.0 — extracted by Claude in PASS 0.5. REQUIRED for mockups to
+  // look like the target app. When missing, renderer falls back to documented
+  // defaults (output reads as "generic template" rather than "real screenshot
+  // of THAT app"). See PROMPT.md PASS 0.5 for the schema spec.
+  style_profile?: StyleProfile;
   screenshots: AIScreenshot[];
   appIconUrl?: string;
   appName?: string;
@@ -108,6 +174,39 @@ export interface BriefsFile {
   // Phase FG: optional landscape banner (1024×500) generated alongside the 6 slots
   featureGraphic?: AIFeatureGraphic;
 }
+
+// Documented default profile — used when briefs.json omits style_profile.
+// Matches the "generic clean SaaS" look the renderer shipped before v0.3.0.
+export const DEFAULT_STYLE_PROFILE: StyleProfile = {
+  type_ramp: {
+    display: { size: 44, weight: "700", family: "Inter", letter_spacing: 0 },
+    title:   { size: 22, weight: "600", family: "Inter", letter_spacing: 0 },
+    body:    { size: 16, weight: "500", family: "Inter", letter_spacing: 0 },
+    caption: { size: 12, weight: "400", family: "Inter", letter_spacing: 0 },
+  },
+  colors: {
+    primary: "#4f46e5",
+    secondary: "#7c3aed",
+    accent: "#f59e0b",
+    background: "#ffffff",
+    surface: "#f9fafb",
+    label_primary: "#111827",
+    label_secondary: "#6b7280",
+    separator: "#e5e7eb",
+  },
+  gradients: [],
+  spacing: [4, 8, 12, 16, 24, 32],
+  shape: { card: 12, button: 8, input: 8, chip: 999, sheet: 20 },
+  density: { list_row_height: 60, button_height: 48, tab_bar_height: 56, input_height: 44 },
+  elevation: { card: 1, button: 1, modal: 4, sheet: 3 },
+  mood_modifiers: {
+    uppercase_buttons: false,
+    letter_spaced_titles: false,
+    text_shadows: false,
+    bold_outlines: false,
+    drop_caps: false,
+  },
+};
 
 export type DeviceScreenshotMap = Record<string, string>; // ai-screenshot-name -> data_url
 
