@@ -6,6 +6,8 @@ All notable changes to this plugin are documented here. The format follows [Keep
 
 ### Added
 
+- **`/snap-mock` slash command.** Explicit, deterministic invocation: `/snap-mock /path/to/your-project`. Autocompletes in Claude Code. The natural-language phrases ("snap mock …", "generate mockups for …") still trigger the skill via auto-match. Defined in `commands/snap-mock.md`.
+- **No-argument safety guarantee.** Bare `/snap-mock` (no path) treats cwd as the target and forces `SNAP_MOCK_MODE=standalone`, so the bundled renderer at `~/.snap-mock-renderer/` is used and the user's project files are never copied into or modified — even when cwd is a Next.js + Konva app that would otherwise auto-trigger in-place mode.
 - **Bundled renderer.** `templates/renderer/` ships a minimal Next.js + React + Konva app inside the plugin. Users no longer need a separate `ai-mockup-generator` checkout. On first run, `scaffold.sh` materializes the renderer at `~/.snap-mock-renderer/` (override with `SNAP_MOCK_RENDERER_HOME`), runs `npm install`, and downloads Chromium.
 - **Feature Graphic.** Every run now produces `feature-graphic.png` (1024×500) alongside the 6 slot screenshots. The Feature Graphic reuses one of the slot's in-device renders via the new `source_slot` field — no extra render call, theme stays in sync.
 - **Dual-mode `scaffold.sh`.** Auto-detects and chooses between two modes:

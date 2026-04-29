@@ -35,10 +35,20 @@ That's it. No second repo to clone, no API keys.
 
 From any directory, in Claude Code:
 
-> snap mock /path/to/your-project
+```text
+/snap-mock /path/to/your-project
+```
 
-Other phrasings that trigger the skill:
+That's the slash command — explicit, autocompletes, deterministic.
 
+**Bare `/snap-mock` (no path)** works too: it analyzes the current directory
+as the target, using the bundled renderer at `~/.snap-mock-renderer/`. Your
+project files are never modified — even if cwd happens to be a Next.js + Konva
+app, the no-argument form forces standalone mode.
+
+Natural-language triggers also work (the skill auto-matches on intent):
+
+- `snap mock /path/to/your-project`
 - `generate mockups for /path/to/your-project`
 - `play store screenshots from /path/to/your-project`
 - `create app store mockups for <path>`
