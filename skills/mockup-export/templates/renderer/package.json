@@ -1,0 +1,39 @@
+{
+  "name": "snap-mock-renderer",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Headless Konva renderer for the snap-mock plugin. Auto-scaffolded by mockup-export/scripts/scaffold.sh — do not hand-edit unless you know why.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@types/webfontloader": "^1.6.38",
+    "clsx": "^2.1.1",
+    "immer": "^11.1.4",
+    "jszip": "^3.10.1",
+    "konva": "^10.2.3",
+    "lucide-react": "^0.577.0",
+    "next": "16.2.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-konva": "^19.2.3",
+    "tailwind-merge": "^3.5.0",
+    "webfontloader": "^1.6.28",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "adm-zip": "^0.5.17",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.1",
+    "playwright": "^1.59.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

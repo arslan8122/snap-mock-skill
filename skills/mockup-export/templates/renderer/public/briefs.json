@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "appName": "Placeholder",
+  "theme": {
+    "headline_font": "Inter",
+    "body_font": "Inter",
+    "headline_weight": "700",
+    "mood": "professional",
+    "accent_color": "#7c3aed",
+    "primary_gradient_start": "#4f46e5",
+    "primary_gradient_end": "#7c3aed",
+    "mesh_colors": ["#4f46e5", "#7c3aed", "#ec4899"]
+  },
+  "screenshots": []
+}

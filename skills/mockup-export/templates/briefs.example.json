@@ -90,5 +90,74 @@
         }
       ]
     }
-  ]
+  ],
+  "featureGraphic": {
+    "name": "Feature Graphic",
+    "layers": [
+      {
+        "type": "background",
+        "name": "Background",
+        "background_type": "mesh",
+        "fill": "#ffffff",
+        "gradient_start": null,
+        "gradient_end": null,
+        "gradient_angle": 0,
+        "mesh_colors": ["#4f46e5", "#7c3aed", "#ec4899"],
+        "mesh_seed": 999,
+        "image_query": null,
+        "overlay_opacity": 0.4
+      },
+      {
+        "type": "device",
+        "name": "Device",
+        "device_id": "pixel-9-pro",
+        "x": 300,
+        "y": 18,
+        "scale": 0.40,
+        "rotation": 8,
+        "frame_style": "clay",
+        "frame_color": "#ffffff",
+        "source_slot": "Hero"
+      },
+      {
+        "type": "icon",
+        "name": "App Icon",
+        "x": 24,
+        "y": 22,
+        "width": 36,
+        "height": 36,
+        "corner_radius": 8
+      },
+      {
+        "type": "text",
+        "name": "Headline",
+        "text": "TRACK PROGRESS",
+        "font_family": "Inter",
+        "font_weight": "800",
+        "font_size": 44,
+        "fill": "#ffffff",
+        "align": "left",
+        "x": 24,
+        "y": 60,
+        "width": 260,
+        "rotation": 0,
+        "opacity": 1
+      },
+      {
+        "type": "text",
+        "name": "Subtitle",
+        "text": "Built for power users",
+        "font_family": "Inter",
+        "font_weight": "400",
+        "font_size": 15,
+        "fill": "#ffffff",
+        "align": "left",
+        "x": 24,
+        "y": 160,
+        "width": 260,
+        "rotation": 0,
+        "opacity": 0.92
+      }
+    ]
+  }
 }

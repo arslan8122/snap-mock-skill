@@ -7,10 +7,14 @@ PLUGIN_DATA="${CLAUDE_PLUGIN_DATA:-/tmp/snap-mock-skill}"
 mkdir -p "$PLUGIN_DATA"
 
 APP_ROOT="${APP_ROOT:-}"
+if [ -z "$APP_ROOT" ] && [ -f "$PLUGIN_DATA/scaffold.env" ]; then
+  # scaffold.sh writes APP_ROOT here (standalone or in-place mode)
+  APP_ROOT="$(grep '^APP_ROOT=' "$PLUGIN_DATA/scaffold.env" | cut -d= -f2-)"
+fi
 if [ -z "$APP_ROOT" ]; then
   if [ -f "package.json" ]; then APP_ROOT="$(pwd)"
   elif [ -f "frontend/package.json" ]; then APP_ROOT="$(pwd)/frontend"
-  else echo "[start-dev] error: cannot locate app root" >&2; exit 1
+  else echo "[start-dev] error: cannot locate app root (run scaffold.sh first)" >&2; exit 1
   fi
 fi
 

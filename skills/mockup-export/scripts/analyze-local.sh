@@ -396,6 +396,118 @@ if app_icon_local:
 else:
     print(f"[analyze-local] no app icon found", file=sys.stderr)
 
+# --- Project assets harvest ---
+# Surface every in-project illustration/splash/hero/logo so the synthesizer
+# can use REAL artwork from the user's repo. Skip:
+#   - the chosen app icon (already embedded)
+#   - launcher/mipmap variants (duplicate icons)
+#   - bundled navigation chrome from node_modules_* RN copies
+#   - icons inside deep build/Pods/DerivedData paths (already filtered above)
+project_assets = []
+
+skip_asset_patterns = [
+    re.compile(r"node_modules_"),                          # RN bundles nav-elements icons into android res
+    re.compile(r"mipmap-"),                                # launcher icon density variants
+    re.compile(r"ic_launcher"),                            # android launcher
+    re.compile(r"AppIcon\.appiconset"),                    # iOS launcher set
+    re.compile(r"Contents\.json$"),
+    re.compile(r"\.xcassets/"),                            # iOS asset catalog internals
+    re.compile(r"playstore|appstore|fastlane", re.I),      # store-listing folders
+    re.compile(r"badge|chevron|arrow|back|close|search-icon|home-icon", re.I),  # UI chrome
+]
+
+asset_keywords = {
+    "splash":       ("splash",),
+    "hero":         ("hero", "banner", "header"),
+    "illustration": ("illustration", "illu", "graphic", "art-", "artwork", "scene", "vector"),
+    "onboarding":   ("onboarding", "welcome", "intro", "tutorial", "walkthrough"),
+    "empty":        ("empty", "no-data", "no_data", "placeholder"),
+    "logo":         ("logo", "wordmark", "brand"),
+}
+
+def classify_asset(rel_path: str) -> str:
+    p = rel_path.lower()
+    for kind, kws in asset_keywords.items():
+        if any(kw in p for kw in kws):
+            return kind
+    return "other"
+
+# Try to read width/height for PNGs (struct in stdlib) without Pillow
+def png_dims(filepath: str):
+    try:
+        with open(filepath, "rb") as fh:
+            head = fh.read(24)
+        if len(head) >= 24 and head[:8] == b"\x89PNG\r\n\x1a\n" and head[12:16] == b"IHDR":
+            import struct
+            w, h = struct.unpack(">II", head[16:24])
+            return w, h
+    except Exception:
+        pass
+    return 0, 0
+
+ASSET_SIZE_INLINE_CAP = 500 * 1024   # only embed data URL if <500 KB
+ASSET_TOTAL_INLINE_CAP = 1_500_000   # don't blow analysis.json past ~1.5MB across all assets
+ASSET_COUNT_CAP = 20                 # at most 20 assets surfaced
+
+inlined_total_bytes = 0
+
+for rel in image_paths:
+    if rel == app_icon_local:
+        continue
+    if any(rx.search(rel) for rx in skip_asset_patterns):
+        continue
+    if len(project_assets) >= ASSET_COUNT_CAP:
+        break
+
+    fp = os.path.join(target_dir, rel)
+    try:
+        size = os.path.getsize(fp)
+    except OSError:
+        continue
+    if size < 200:                  # likely 1x1 spacer or broken
+        continue
+
+    ext = rel.rsplit(".", 1)[-1].lower()
+    mime = {
+        "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg",
+        "svg": "image/svg+xml", "webp": "image/webp",
+    }.get(ext, "application/octet-stream")
+
+    width = height = 0
+    if ext == "png":
+        width, height = png_dims(fp)
+
+    kind = classify_asset(rel)
+    data_url = ""
+    if size <= ASSET_SIZE_INLINE_CAP and inlined_total_bytes + size <= ASSET_TOTAL_INLINE_CAP:
+        try:
+            with open(fp, "rb") as fh:
+                data = fh.read()
+            data_url = f"data:{mime};base64,{base64.b64encode(data).decode()}"
+            inlined_total_bytes += size
+        except Exception:
+            data_url = ""
+
+    project_assets.append({
+        "path": rel,
+        "kind": kind,
+        "ext": ext,
+        "size": size,
+        "width": width,
+        "height": height,
+        "data_url": data_url,
+    })
+
+# Sort: classified kinds first (most useful), then by size descending within each
+kind_priority = {"hero": 0, "illustration": 1, "splash": 2, "onboarding": 3, "logo": 4, "empty": 5, "other": 6}
+project_assets.sort(key=lambda a: (kind_priority.get(a["kind"], 9), -a["size"]))
+
+print(f"[analyze-local] project_assets: {len(project_assets)} entries (inlined ~{inlined_total_bytes // 1024} KB)", file=sys.stderr)
+for a in project_assets[:6]:
+    inlined = "inline" if a["data_url"] else "path-only"
+    dims = f"{a['width']}x{a['height']}" if a["width"] else "?"
+    print(f"[analyze-local]   - {a['kind']:<13} {dims:>11}  {a['size']//1024:>5}KB  {inlined}  {a['path']}", file=sys.stderr)
+
 analysis = {
     "app_name": app_name,
     "framework": framework,
@@ -412,6 +524,7 @@ analysis = {
     "file_count": len(manifest),
     "app_icon_url": app_icon_data_url,  # data URL — directly usable as IconLayer.imageUrl
     "app_icon_local": app_icon_local,    # for debugging
+    "project_assets": project_assets,    # in-project illustrations/splash/hero/logo for the synthesizer to use
     "target_dir": target_dir,
     "features": [],
 }

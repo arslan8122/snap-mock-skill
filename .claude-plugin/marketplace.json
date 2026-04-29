@@ -5,14 +5,15 @@
     "email": "claudeservice@datics.ai"
   },
   "metadata": {
-    "description": "Generate Google Play Store mockup screenshots from any GitHub repo — without leaving the terminal"
+    "description": "Generate Google Play Store mockup screenshots and Feature Graphics from any local codebase — without leaving the terminal",
+    "version": "0.2.0"
   },
   "plugins": [
     {
       "name": "snap-mock-skill",
       "source": "./",
-      "description": "Point at a GitHub URL, get 6 ready-to-export Play Store mockup screenshots (1080x1920 PNG) with gradient backgrounds, device frames, and AI-written marketing copy. Powered by Claude + headless Chromium + Konva.",
-      "version": "0.1.0",
+      "description": "Point at a local project directory, get 6 ready-to-export Play Store mockup screenshots (1080×1920 PNG) plus a 1024×500 Feature Graphic — gradient backgrounds, device frames, AI-written marketing copy, and in-device screen renders generated from your real source code. Powered by Claude + headless Chromium + Konva. Bundles its own Next.js renderer; no other repo required.",
+      "version": "0.2.0",
       "author": {
         "name": "Arslan",
         "email": "claudeservice@datics.ai"
@@ -24,17 +25,21 @@
         "mockups",
         "play-store",
         "app-store",
+        "feature-graphic",
         "marketing",
-        "github",
+        "claude-code",
+        "claude-plugin",
         "konva",
-        "playwright"
+        "playwright",
+        "nextjs"
       ],
       "category": "design",
       "tags": [
         "screenshots",
         "mockups",
         "play-store",
-        "marketing"
+        "marketing",
+        "feature-graphic"
       ],
       "strict": false
     }
